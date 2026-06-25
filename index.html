@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Untukmu di Hari Istimewa</title>
+    <title>Birthday Putri</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts -->
@@ -192,10 +192,8 @@
       style="animation-delay: -3s"
     ></div>
 
-    <!-- Background Music Audio (Jamrud - Selamat Ulang Tahun Instrumental Piano Cover) -->
-    <audio id="bgMusic" loop>
-      <!-- Tautan ini memutar versi piano instrumental lembut lagu ulang tahun yang indah -->
-      <!-- TIPS: Jika Anda memiliki file MP3 lagu Jamrud sendiri, letakkan file tersebut di folder yang sama dan ganti link di bawah menjadi src="selamat-ulang-tahun-instrumental.mp3" -->
+    <!-- Background Music Audio -->
+    <audio id="bgMusic" loop autoplay>
       <source src="/musik/backsound.mp3" type="audio/mp3" />
     </audio>
 
@@ -365,7 +363,7 @@
         </button>
 
         <!-- Scrollable Paper Content -->
-        <div class="overflow-y-auto p-8 md:p-12 custom-scroll flex-1">
+        <div class="overflow-y-auto p-5 md:p-12 custom-scroll flex-1">
           <!-- Small Vintage flower decoration element at the top -->
           <div class="flex justify-center mb-6 text-stone-400">
             <svg
@@ -664,6 +662,24 @@
       }
       musicBtn.addEventListener("click", toggleMusic);
 
+      // Autoplay logic workaround
+      window.addEventListener("DOMContentLoaded", () => {
+        bgMusic.play().then(() => {
+          isMusicPlaying = true;
+          musicOnIcon.classList.remove("hidden");
+          musicOffIcon.classList.add("hidden");
+        }).catch(() => {
+          // Play on first interaction if blocked
+          const playOnInteract = () => {
+            if (!isMusicPlaying) toggleMusic();
+            document.removeEventListener("click", playOnInteract);
+            document.removeEventListener("touchstart", playOnInteract);
+          };
+          document.addEventListener("click", playOnInteract);
+          document.addEventListener("touchstart", playOnInteract);
+        });
+      });
+
       // 3. Spawns beautiful romantic floating star particles
       function spawnSparkle(x, y) {
         const particle = document.createElement("div");
@@ -710,11 +726,6 @@
 
       // 4. Envelope opening and letter modal display
       function openEnvelope(e) {
-        // Putar musik otomatis jika belum diputar (sebagai bentuk respons interaksi pengguna)
-        if (!isMusicPlaying) {
-          toggleMusic();
-        }
-
         // Create explosion of stars around envelope
         const rect = envelopeContainer.getBoundingClientRect();
         const centerX = rect.left + rect.width / 2;
