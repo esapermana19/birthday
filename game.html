@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kuis Receh Ulang Tahun</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tone.js untuk Audio -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&family=Fredoka+One&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #1a1b26;
+            overflow: hidden;
+        }
+        .font-fun {
+            font-family: 'Fredoka One', cursive; /* Menggunakan fallback sistem jika Fredoka gagal load */
+            font-weight: 700;
+        }
+
+        /* Animations */
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        .animate-float {
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes shakeHit {
+            0% { transform: translateX(0); filter: brightness(1); }
+            20% { transform: translateX(-10px); filter: brightness(0.5) sepia(1) hue-rotate(-50deg) saturate(5); }
+            40% { transform: translateX(10px); filter: brightness(0.5) sepia(1) hue-rotate(-50deg) saturate(5); }
+            60% { transform: translateX(-10px); filter: brightness(0.5) sepia(1) hue-rotate(-50deg) saturate(5); }
+            80% { transform: translateX(10px); filter: brightness(0.5) sepia(1) hue-rotate(-50deg) saturate(5); }
+            100% { transform: translateX(0); filter: brightness(1); }
+        }
+        .hit-animation {
+            animation: shakeHit 0.5s ease-in-out;
+        }
+
+        /* Projectile Animation Classes */
+        .projectile {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: radial-gradient(circle, #fbbf24, #ef4444);
+            border-radius: 50%;
+            box-shadow: 0 0 15px #ef4444, 0 0 30px #f59e0b;
+            opacity: 0;
+            z-index: 50;
+            transition: all 0.4s cubic-bezier(0.5, 0, 0.5, 1);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center text-slate-200 relative p-4">
+
+    <!-- Audio Start Overlay (Browser mewajibkan interaksi klik untuk memutar suara) -->
+    <div id="startOverlay" class="absolute inset-0 bg-slate-950/90 backdrop-blur-md z-[100] flex flex-col items-center justify-center p-6 text-center transition-opacity duration-500">
+        <h1 class="text-4xl md:text-5xl font-fun text-rose-500 mb-4 animate-pulse uppercase drop-shadow-[0_0_15px_rgba(244,63,94,0.8)]">FIGHT!</h1>
+        <p class="text-slate-300 mb-8 max-w-md text-lg">Jawab pertanyaan nya yang bener yaa</p>
+        <button id="startGameBtn" class="px-8 py-4 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 rounded-full font-bold text-white text-xl shadow-[0_0_30px_rgba(79,70,229,0.6)] transition-all active:scale-95 border-2 border-indigo-400">
+            🔥 Mulai Pertarungan 🔥
+        </button>
+    </div>
+
+    <!-- Efek Latar Bintang (Simple) -->
+    <div class="absolute inset-0 overflow-hidden pointer-events-none opacity-40">
+        <div class="absolute w-2 h-2 bg-white rounded-full top-[10%] left-[20%] animate-ping"></div>
+        <div class="absolute w-1 h-1 bg-white rounded-full top-[30%] left-[80%] animate-ping" style="animation-delay: 1s;"></div>
+        <div class="absolute w-2 h-2 bg-white rounded-full top-[70%] left-[15%] animate-ping" style="animation-delay: 0.5s;"></div>
+        <div class="absolute w-1.5 h-1.5 bg-white rounded-full top-[85%] left-[75%] animate-ping" style="animation-delay: 1.5s;"></div>
+    </div>
+
+    <!-- Battle Arena Container -->
+    <main class="w-full max-w-2xl bg-slate-900/80 backdrop-blur-md rounded-2xl border border-slate-700 shadow-2xl overflow-hidden relative z-10">
+        
+        <!-- Header: Nyawa & Progress -->
+        <div class="flex justify-between items-center p-4 bg-slate-800/80 border-b border-slate-700">
+            <div class="flex items-center gap-2">
+                <span class="text-sm font-semibold text-slate-400">Pertanyaan:</span>
+                <span id="questionCounter" class="bg-indigo-600 text-white text-xs px-2 py-1 rounded-full font-bold">1 / 5</span>
+            </div>
+            <a href="index.html" class="text-xs text-slate-400 hover:text-white transition-colors underline">Kembali ke Surat</a>
+        </div>
+
+        <!-- Stage: Character vs Monster -->
+        <div class="relative w-full h-56 md:h-72 bg-slate-950 flex justify-between items-end p-6 border-b border-slate-800 overflow-hidden" id="battleStage">
+            <!-- Projectile Element (Hidden initially) -->
+            <div id="projectile" class="projectile top-1/2 right-[20%]"></div>
+
+            <!-- Karakter Kita (Kiri) -->
+            <div id="hero" class="relative z-10 flex flex-col items-center justify-end animate-float" style="animation-delay: 0.2s;">
+                
+                <!-- NEW: Nama dan Bar Nyawa (Putri) -->
+                <div class="mb-2 flex flex-col items-center">
+                    <span class="text-xs font-bold text-white bg-indigo-600/90 px-3 py-0.5 rounded-full mb-1 border border-indigo-400/30">Putri</span>
+                    <div class="w-16 md:w-20 h-2.5 bg-slate-800 rounded-full border border-slate-700 overflow-hidden shadow-inner">
+                        <div id="putriHpBar" class="h-full bg-emerald-400 w-full transition-all duration-500 ease-out"></div>
+                    </div>
+                </div>
+
+                <!-- Status Chat Bubble -->
+                <div id="heroChat" class="absolute -top-6 bg-white text-slate-800 text-[10px] md:text-xs font-bold px-3 py-1 rounded-xl rounded-bl-none opacity-0 transition-opacity duration-300 shadow-lg">
+                    Aduh! 😖
+                </div>
+                <!-- Hero SVG (Cute Knight/Person) -->
+                <svg class="w-20 h-20 md:w-28 md:h-28 text-indigo-400 drop-shadow-[0_0_15px_rgba(99,102,241,0.5)]" viewBox="0 0 100 100" fill="currentColor">
+                    <path d="M50 15C38.9 15 30 23.9 30 35C30 37.1 30.3 39.2 30.9 41.1C24.4 46.5 20 54.7 20 64C20 78.4 33.4 90 50 90C66.6 90 80 78.4 80 64C80 54.7 75.6 46.5 69.1 41.1C69.7 39.2 70 37.1 70 35C70 23.9 61.1 15 50 15ZM40 35C40 32.2 42.2 30 45 30C47.8 30 50 32.2 50 35C50 37.8 47.8 40 45 40C42.2 40 40 37.8 40 35ZM55 30C57.8 30 60 32.2 60 35C60 37.8 57.8 40 55 40C52.2 40 50 37.8 50 35ZM45 45H55C57.8 45 60 47.2 60 50H40C40 47.2 42.2 45 45 45Z"/>
+                </svg>
+                <div class="w-16 h-2 bg-black/40 blur-sm rounded-full mt-2"></div>
+            </div>
+
+            <!-- Monster (Kanan) -->
+            <div id="monster" class="relative z-10 flex flex-col items-center justify-end animate-float">
+                <!-- NEW: Nama dan Bar Nyawa (Monster) -->
+                <div class="mb-2 flex flex-col items-center">
+                    <span class="text-[10px] font-bold text-rose-200 bg-rose-900/60 border border-rose-500/30 px-2 py-0.5 rounded-md mb-1">Monster Receh</span>
+                    <div class="w-16 md:w-20 h-2.5 bg-slate-800 rounded-full border border-slate-700 overflow-hidden shadow-inner">
+                        <div id="monsterHpBar" class="h-full bg-emerald-400 w-full transition-all duration-500 ease-out"></div>
+                    </div>
+                </div>
+
+                <!-- Status Chat Bubble Monster -->
+                <div id="monsterChat" class="absolute -top-6 bg-white text-slate-800 text-[10px] md:text-xs font-bold px-3 py-1 rounded-xl rounded-br-none opacity-0 transition-opacity duration-300 shadow-lg">
+                    Ouch! 😵
+                </div>
+                
+                <!-- Monster SVG (Cute grumpy blob) -->
+                <svg class="w-24 h-24 md:w-32 md:h-32 text-rose-500 drop-shadow-[0_0_20px_rgba(244,63,94,0.6)]" viewBox="0 0 100 100" fill="currentColor">
+                    <path d="M50 10C27.9 10 10 27.9 10 50C10 75 25 85 40 90C45 91.7 50 90 50 90C50 90 55 91.7 60 90C75 85 90 75 90 50C90 27.9 72.1 10 50 10ZM35 45C31.1 45 28 41.9 28 38C28 34.1 31.1 31 35 31C38.9 31 42 34.1 42 38C42 41.9 38.9 45 35 45ZM65 45C61.1 45 58 41.9 58 38C58 34.1 61.1 31 65 31C68.9 31 72 34.1 72 38C72 41.9 68.9 45 65 45ZM60 65H40C37.2 65 35 62.8 35 60C35 57.2 37.2 55 40 55H60C62.8 55 65 57.2 65 60C65 62.8 62.8 65 60 65Z"/>
+                </svg>
+                
+                <div class="w-20 h-2 bg-black/40 blur-sm rounded-full mt-1"></div>
+            </div>
+        </div>
+
+        <!-- Question Panel -->
+        <div class="p-6">
+            <h2 id="questionText" class="text-lg md:text-xl font-medium text-center mb-6 min-h-[60px] flex items-center justify-center">
+                Memuat pertanyaan...
+            </h2>
+
+            <!-- Options Grid -->
+            <div id="optionsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <!-- Buttons will be injected here via JS -->
+            </div>
+        </div>
+
+        <!-- Result/Feedback Overlay (Hidden by default) -->
+        <div id="feedbackModal" class="absolute inset-0 bg-slate-900/95 backdrop-blur-sm z-50 flex flex-col items-center justify-center p-6 text-center transform scale-0 opacity-0 transition-all duration-300">
+            <div id="feedbackIcon" class="text-6xl mb-4">😂</div>
+            <h3 id="feedbackTitle" class="text-2xl font-fun text-white mb-2">Salah Wleee!</h3>
+            <p id="feedbackReason" class="text-slate-300 mb-6 text-lg max-w-sm"></p>
+            <button id="nextBtn" class="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 rounded-full font-bold text-white shadow-lg shadow-indigo-600/30 transition-all active:scale-95">
+                Lanjut Pertanyaan
+            </button>
+        </div>
+
+    </main>
+
+    <script>
+        // Data Pertanyaan (Campuran soal user & soal tebak-tebakan lucu)
+        const questions = [
+            {
+                q: "Putri punya katak yang bisa loncat dengan jarak 1 meter. Lalu dia pengen menyebrangi sungai yang jaraknya 5 meter. Untuk bisa menyebrang butuh berapa kali loncat?",
+                options: ["1 kali", "2 kali", "3 kali", "5 kali"],
+                answerIndex: 0,
+                reason: "Kan abis satu kali loncat tinggal berenang 🐸💦"
+            },
+            {
+                q: "Putri lagi berburu di hutan, menemukan 3 ekor burung. Putri berhasil menembak 1 ekor. Berapa ekor yang lari menyelamatkan diri?",
+                options: ["Tertembak semua", "1 ekor", "2 ekor", "Semua salah"],
+                answerIndex: 3,
+                reason: "Semua salah! Karena mereka menyelamatkan dirinya terbang, bukan lari 🦅💨"
+            },
+            {
+                q: "Putri pergi ke pasar membawa uang 30 ribu dan mau membeli salak 3 kilo. Harga satu kilonya 5 ribu. Berapa kembalian yang Putri terima?",
+                options: ["5 ribu", "10 ribu", "15 ribu", "Habis"],
+                answerIndex: 0,
+                reason: "5 ribu dong! Kan uang yang dikasihkan ke pedagangnya selembar 20 ribu aja, ngapain dikasih 30 ribu 🤣💸"
+            },
+            {
+                q: "Besoknya lagi Putri ke pasar dengan adiknya untuk membantu menghitung. Mereka membawa uang 100 ribu dan membeli beras 5 kilo, harga 1 kilonya 15 ribu. Berapa kembalian yang diterima?",
+                options: ["25 ribu", "10 ribu", "5 ribu", "Habis"],
+                answerIndex: 3,
+                reason: "Habis! Karena pas pulang dari pasar Putri beli bensin dulu ⛽🛵 wkwk"
+            },
+            {
+                q: "Besoknya Putri pergi ke tempat makan. Pesan makanan total 35 ribu, tapi sialnya lupa bawa uang. Akhirnya telpon temennya dan pinjam uang 50 ribu. Berapa kembalian dari tempat makan?",
+                options: ["5 ribu", "10 ribu", "15 ribu", "Tidak ada"],
+                answerIndex: 3,
+                reason: "Tidak ada kembalian. Karena temennya minjemin duit di TF ke DANA, dan Putri bayar makannya pakai QRIS! 📱✨"
+            }
+        ];
+
+        let currentQIndex = 0;
+        let isAnimating = false;
+        
+        // NEW: Variabel HP / Nyawa (3 untuk keduanya)
+        const maxHp = 3;
+        let putriHp = maxHp; 
+        let monsterHp = maxHp;
+
+        // DOM Elements
+        const questionText = document.getElementById('questionText');
+        const optionsContainer = document.getElementById('optionsContainer');
+        const questionCounter = document.getElementById('questionCounter');
+        
+        const hero = document.getElementById('hero');
+        const heroChat = document.getElementById('heroChat');
+        const projectile = document.getElementById('projectile');
+        const putriHpBar = document.getElementById('putriHpBar'); 
+        
+        // NEW: Monster DOM
+        const monster = document.getElementById('monster');
+        const monsterChat = document.getElementById('monsterChat');
+        const monsterHpBar = document.getElementById('monsterHpBar');
+        
+        const feedbackModal = document.getElementById('feedbackModal');
+        const feedbackTitle = document.getElementById('feedbackTitle');
+        const feedbackReason = document.getElementById('feedbackReason');
+        const feedbackIcon = document.getElementById('feedbackIcon');
+        const nextBtn = document.getElementById('nextBtn');
+
+        const startOverlay = document.getElementById('startOverlay');
+        const startGameBtn = document.getElementById('startGameBtn');
+
+        // === SISTEM AUDIO (Tone.js) ===
+        let bgmPart, kickLoop;
+        
+        // Synth untuk background music (ala Mortal Kombat Techno)
+        const mkSynth = new Tone.PolySynth(Tone.Synth, {
+            oscillator: { type: "sawtooth" },
+            envelope: { attack: 0.01, decay: 0.1, sustain: 0.1, release: 0.1 }
+        }).toDestination();
+        mkSynth.volume.value = -12; // Kurangi volume BGM agar tidak terlalu berisik
+
+        // Drum (Kick) untuk beat pertarungan
+        const kickDrum = new Tone.MembraneSynth().toDestination();
+        kickDrum.volume.value = -6;
+
+        // Synth untuk suara tembakan Monster
+        const shootSound = new Tone.Synth({
+            oscillator: { type: 'square' },
+            envelope: { attack: 0.01, decay: 0.2, sustain: 0, release: 0.1 }
+        }).toDestination();
+        shootSound.volume.value = -5;
+
+        // NEW: Synth untuk suara tembakan Putri (Lebih melengking/sihir)
+        const heroShootSound = new Tone.Synth({
+            oscillator: { type: 'triangle' },
+            envelope: { attack: 0.01, decay: 0.1, sustain: 0, release: 0.1 }
+        }).toDestination();
+        heroShootSound.volume.value = -4;
+
+        // Synth untuk suara ledakan / kena hit
+        const hitSound = new Tone.NoiseSynth({
+            noise: { type: 'white' },
+            envelope: { attack: 0.01, decay: 0.3, sustain: 0, release: 0.2 }
+        }).toDestination();
+        hitSound.volume.value = -2;
+
+        function setupAudio() {
+            // Melodi ala Mortal Kombat (A A A C E...)
+            const mkMelody = [
+                "A3", "A3", "A3", "C4", "A3", "D4", "A3", "E4",
+                "C4", "C4", "C4", "E4", "C4", "G4", "C4", "E4",
+                "G3", "G3", "G3", "B3", "G3", "C4", "G3", "D4",
+                "F3", "F3", "F3", "A3", "F3", "C4", "F3", "C4"
+            ];
+            
+            bgmPart = new Tone.Sequence((time, note) => {
+                mkSynth.triggerAttackRelease(note, "16n", time);
+            }, mkMelody, "16n");
+
+            kickLoop = new Tone.Loop((time) => {
+                kickDrum.triggerAttackRelease("C1", "8n", time);
+            }, "4n");
+
+            Tone.Transport.bpm.value = 135; // Tempo cepat ala game fighting
+        }
+
+        // Tombol Mulai (Wajib untuk mengaktifkan AudioContext di browser)
+        startGameBtn.addEventListener('click', async () => {
+            await Tone.start(); // Izinkan browser memainkan audio
+            setupAudio();
+            Tone.Transport.start();
+            bgmPart.start(0);
+            kickLoop.start(0);
+            
+            startOverlay.style.opacity = '0';
+            setTimeout(() => {
+                startOverlay.style.display = 'none';
+            }, 500);
+            
+            loadQuestion(); // Muat soal pertama setelah masuk
+        });
+
+        // Load Question Function
+        function loadQuestion() {
+            if (currentQIndex >= questions.length) {
+                showEndScreen();
+                return;
+            }
+
+            const q = questions[currentQIndex];
+            questionCounter.innerText = `${currentQIndex + 1} / ${questions.length}`;
+            questionText.innerText = q.q;
+            
+            optionsContainer.innerHTML = '';
+            
+            q.options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                // Label a, b, c, d
+                const prefix = ['a.', 'b.', 'c.', 'd.'][idx];
+                
+                btn.className = "w-full text-left p-4 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 border border-slate-600 rounded-xl transition-colors font-medium text-sm md:text-base group flex gap-3 items-center";
+                btn.innerHTML = `<span class="bg-slate-900 text-slate-400 px-2 py-1 rounded text-xs uppercase group-hover:bg-slate-800">${prefix}</span> <span>${opt}</span>`;
+                
+                btn.onclick = () => handleAnswer(idx);
+                optionsContainer.appendChild(btn);
+            });
+        }
+
+        // Handle when option is clicked
+        function handleAnswer(selectedIndex) {
+            if(isAnimating) return; // Prevent spam clicks
+            isAnimating = true;
+
+            const q = questions[currentQIndex];
+            const isCorrect = selectedIndex === q.answerIndex;
+
+            if (isCorrect) {
+                // Benar -> Putri Nembak Monster
+                monsterHp--;
+                updateHpBar(monsterHpBar, monsterHp);
+                
+                triggerAttack('hero', () => {
+                    showFeedback(true, q.reason);
+                });
+            } else {
+                // Salah -> Monster Nembak Putri
+                putriHp--;
+                updateHpBar(putriHpBar, putriHp);
+
+                triggerAttack('monster', () => {
+                    showFeedback(false, q.reason);
+                });
+            }
+        }
+
+        // Fungsi Helper Update Visual Bar Nyawa
+        function updateHpBar(barElement, currentHp) {
+            const hpPercentage = (currentHp / maxHp) * 100;
+            barElement.style.width = `${hpPercentage}%`;
+            
+            // Ubah warna bar nyawa jika darah menipis
+            if (currentHp === 2) {
+                barElement.className = "h-full w-full transition-all duration-500 ease-out bg-amber-400";
+            } else if (currentHp <= 1) {
+                barElement.className = "h-full w-full transition-all duration-500 ease-out bg-rose-500";
+            }
+        }
+
+        // Attack animation sequence (Bisa untuk Putri & Monster)
+        function triggerAttack(attackerType, callback) {
+            const battleRect = document.getElementById('battleStage').getBoundingClientRect();
+            
+            let startElem, endElem, hitChat, hitTarget;
+
+            // Setup properti berdasarkan siapa yang nyerang
+            if (attackerType === 'hero') {
+                startElem = hero;
+                endElem = monster;
+                // Bola peluru energi warna biru
+                projectile.style.background = 'radial-gradient(circle, #60a5fa, #3b82f6)';
+                projectile.style.boxShadow = '0 0 15px #3b82f6, 0 0 30px #60a5fa';
+                hitChat = monsterChat;
+                hitTarget = monster;
+                
+                // Efek suara tembakan Putri (Piuuw! Nada naik)
+                heroShootSound.frequency.setValueAtTime("C4", Tone.now());
+                heroShootSound.frequency.exponentialRampToValueAtTime("C6", Tone.now() + 0.2);
+                heroShootSound.triggerAttackRelease("C4", "16n", Tone.now());
+            } else {
+                startElem = monster;
+                endElem = hero;
+                // Bola api monster warna merah/kuning
+                projectile.style.background = 'radial-gradient(circle, #fbbf24, #ef4444)';
+                projectile.style.boxShadow = '0 0 15px #ef4444, 0 0 30px #f59e0b';
+                hitChat = heroChat;
+                hitTarget = hero;
+
+                // Efek suara tembakan Monster (Peww! Nada turun)
+                shootSound.frequency.setValueAtTime("C5", Tone.now());
+                shootSound.frequency.exponentialRampToValueAtTime("C2", Tone.now() + 0.3);
+                shootSound.triggerAttackRelease("C5", "8n", Tone.now());
+            }
+
+            const startRect = startElem.getBoundingClientRect();
+            const endRect = endElem.getBoundingClientRect();
+
+            // Titik Awal
+            const startX = startRect.left - battleRect.left + (startRect.width / 2) - 10;
+            const startY = startRect.top - battleRect.top + (startRect.height / 2) - 10;
+            
+            // Titik Akhir
+            const endX = endRect.left - battleRect.left + (endRect.width / 2) - 10;
+            const endY = endRect.top - battleRect.top + (endRect.height / 2) - 10;
+
+            projectile.style.left = `${startX}px`;
+            projectile.style.top = `${startY}px`;
+            projectile.style.transform = `translate(0, 0)`;
+            projectile.style.opacity = '1';
+
+            // Animasi peluru melesat
+            setTimeout(() => {
+                const deltaX = endX - startX;
+                const deltaY = endY - startY;
+                projectile.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+                
+                // Saat peluru kena target
+                setTimeout(() => {
+                    projectile.style.opacity = '0'; // hide fireball
+                    
+                    // Efek suara Hit/Kena
+                    hitSound.triggerAttackRelease("16n", Tone.now());
+
+                    // Getar target & munculin text Aduh
+                    hitTarget.classList.add('hit-animation');
+                    hitChat.style.opacity = '1'; 
+                    
+                    setTimeout(() => {
+                        hitTarget.classList.remove('hit-animation');
+                        hitChat.style.opacity = '0';
+                        callback(); // Tampilkan popup alasan
+                    }, 600); 
+                }, 400);
+            }, 50);
+        }
+
+        // Show popup overlay for explanation
+        function showFeedback(isCorrect, reason) {
+            if (isCorrect) {
+                feedbackTitle.innerText = "Benar Banget!";
+                feedbackTitle.className = "text-2xl font-fun text-emerald-400 mb-2";
+                feedbackIcon.innerText = "✨";
+            } else {
+                feedbackTitle.innerText = "Tetot! Salah Wleee 😛";
+                feedbackTitle.className = "text-2xl font-fun text-rose-500 mb-2";
+                feedbackIcon.innerText = "💥";
+            }
+            
+            feedbackReason.innerText = reason;
+
+            // Jika ada yang nyawanya habis, ubah tombol Lanjut jadi Selesai
+            if (putriHp <= 0 || monsterHp <= 0 || currentQIndex + 1 >= questions.length) {
+                nextBtn.innerText = "Lihat Hasil Pertarungan";
+                nextBtn.className = "px-6 py-3 bg-amber-500 hover:bg-amber-400 active:bg-amber-600 rounded-full font-bold text-white shadow-lg shadow-amber-500/30 transition-all active:scale-95";
+            } else {
+                nextBtn.innerText = "Lanjut Pertanyaan";
+                nextBtn.className = "px-6 py-3 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 rounded-full font-bold text-white shadow-lg shadow-indigo-600/30 transition-all active:scale-95";
+            }
+            
+            feedbackModal.classList.remove('scale-0', 'opacity-0');
+            feedbackModal.classList.add('scale-100', 'opacity-100');
+        }
+
+        // Next Question Button
+        // Next Question Button
+        nextBtn.onclick = () => {
+            feedbackModal.classList.remove('scale-100', 'opacity-100');
+            feedbackModal.classList.add('scale-0', 'opacity-0');
+            
+            setTimeout(() => {
+                // Cek kondisi kalah/menang
+                if (putriHp <= 0 || monsterHp <= 0 || currentQIndex + 1 >= questions.length) {
+                    showEndScreen();
+                } else {
+                    currentQIndex++;
+                    isAnimating = false;
+                    loadQuestion();
+                }
+            }, 300);
+        };
+
+        // End Game Screen
+        function showEndScreen() {
+            let titleStr = "";
+            let messageStr = "";
+            let resultColor = "";
+
+            if (monsterHp <= 0) {
+                titleStr = "Hore! Putri Menang! 🎉";
+                messageStr = "Wihhh jago juga kamu yaa, bisa paham jokes bapak-bapak🤣";
+                resultColor = "text-emerald-400";
+            } else if (putriHp <= 0) {
+                titleStr = "Yhaa... Putri Kalah! 👻";
+                messageStr = "Putrinya gak selamat😭😭";
+                resultColor = "text-rose-500";
+            } else {
+                titleStr = "Game Selesai! 🎉";
+                messageStr = "gimana seru gak?? ketawanya biasa aja yaa jangan guling-guling...";
+                resultColor = "text-indigo-300";
+            }
+
+            questionText.innerText = "Selesai!";
+            optionsContainer.innerHTML = `
+                <div class="col-span-1 md:col-span-2 text-center p-8 bg-slate-800 rounded-xl border border-slate-700">
+                    <h3 class="text-2xl font-fun ${resultColor} mb-4">${titleStr}</h3>
+                    <p class="text-slate-300 mb-6 leading-relaxed">${messageStr}</p>
+                    <a href="index.html" class="inline-block px-8 py-3 bg-rose-600 hover:bg-rose-500 rounded-full font-bold text-white shadow-lg shadow-rose-600/30 transition-transform active:scale-95">
+                        Kembali Baca Surat
+                    </a>
+                </div>
+            `;
+            // Hide the chats if they were stuck
+            heroChat.style.opacity = '0';
+            monsterChat.style.opacity = '0';
+
+            // Hentikan lagu saat game selesai
+            Tone.Transport.stop();
+        }
+    </script>
+</body>
+</html>

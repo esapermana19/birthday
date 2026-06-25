@@ -1,0 +1,762 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Untukmu di Hari Istimewa</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Plus+Jakarta+Sans:wght@300;400;500;600&family=Sacramento&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      body {
+        font-family: "Plus Jakarta Sans", sans-serif;
+        background-color: #0b0f19;
+        overflow-x: hidden;
+      }
+      .font-serif-elegant {
+        font-family: "Cormorant Garamond", serif;
+      }
+      .font-cursive {
+        font-family: "Sacramento", cursive;
+      }
+      .font-title {
+        font-family: "Playfair Display", serif;
+      }
+
+      /* Ambient Glow animation */
+      @keyframes pulseGlow {
+        0%,
+        100% {
+          opacity: 0.25;
+          transform: scale(1) translate(0, 0);
+        }
+        50% {
+          opacity: 0.5;
+          transform: scale(1.05) translate(-10px, 10px);
+        }
+      }
+      .ambient-glow {
+        animation: pulseGlow 8s infinite ease-in-out;
+      }
+
+      /* Moon pulse glow animation */
+      @keyframes moonGlow {
+        0%,
+        100% {
+          filter: drop-shadow(0 0 15px rgba(254, 243, 199, 0.3));
+          opacity: 0.6;
+        }
+        50% {
+          filter: drop-shadow(0 0 25px rgba(254, 243, 199, 0.5));
+          opacity: 0.8;
+        }
+      }
+      .moon-glow {
+        animation: moonGlow 5s infinite ease-in-out;
+      }
+
+      /* Paper Texture styling */
+      .paper-texture {
+        background-color: #fcfaf2;
+        background-image:
+          radial-gradient(
+            circle at 50% 50%,
+            rgba(240, 230, 210, 0.5),
+            transparent
+          ),
+          radial-gradient(rgba(0, 0, 0, 0.03) 1px, transparent 0),
+          radial-gradient(rgba(0, 0, 0, 0.02) 2px, transparent 0);
+        background-size:
+          100% 100%,
+          20px 20px,
+          40px 40px;
+        box-shadow:
+          0 0 0 1px rgba(0, 0, 0, 0.05),
+          0 10px 30px rgba(0, 0, 0, 0.15),
+          inset 0 0 40px rgba(139, 115, 85, 0.15);
+      }
+
+      /* Glassmorphism utility */
+      .glass-card {
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      /* Custom scrollbar for aesthetic paper */
+      .custom-scroll::-webkit-scrollbar {
+        width: 5px;
+      }
+      .custom-scroll::-webkit-scrollbar-track {
+        background: rgba(139, 115, 85, 0.05);
+        border-radius: 10px;
+      }
+      .custom-scroll::-webkit-scrollbar-thumb {
+        background: rgba(139, 115, 85, 0.2);
+        border-radius: 10px;
+      }
+
+      /* Envelope animations */
+      .envelope-wrapper {
+        perspective: 1000px;
+      }
+      .envelope {
+        position: relative;
+        transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        transform-style: preserve-3d;
+      }
+      .envelope.open {
+        transform: translateY(120px) rotateX(-5deg);
+      }
+      .flap {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 50%;
+        background-color: #1e2638;
+        clip-path: polygon(0 0, 50% 60%, 100% 0);
+        transform-origin: top;
+        transition: transform 0.6s ease-in-out;
+        z-index: 3;
+      }
+      .envelope.open .flap {
+        transform: rotateX(180deg);
+        z-index: 1;
+      }
+      .pocket {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: #161d2d;
+        clip-path: polygon(0 40%, 50% 65%, 100% 40%, 100% 100%, 0 100%);
+        z-index: 2;
+        border-radius: 0 0 8px 8px;
+        box-shadow: inset 0 4px 20px rgba(0, 0, 0, 0.4);
+      }
+      .letter-preview {
+        position: absolute;
+        bottom: 10px;
+        left: 5%;
+        width: 90%;
+        height: 75%;
+        background-color: #f7f4eb;
+        border-radius: 4px;
+        z-index: 1;
+        transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        transform: translateY(0);
+      }
+      .envelope.open .letter-preview {
+        transform: translateY(-120px);
+      }
+    </style>
+  </head>
+  <body
+    class="relative min-h-screen flex flex-col justify-between items-center text-slate-200 selection:bg-rose-500/30 overflow-hidden px-4 md:px-8 py-6"
+  >
+    <!-- Interactive Canvas Background for stars and shooting stars -->
+    <canvas
+      id="starsCanvas"
+      class="absolute inset-0 w-full h-full pointer-events-none z-0"
+    ></canvas>
+
+    <!-- Aesthetic Moon (Bulan Sabit) -->
+    <div
+      class="absolute top-12 right-12 md:top-16 md:right-24 w-16 h-16 md:w-24 md:h-24 pointer-events-none z-0 moon-glow select-none"
+    >
+      <svg viewBox="0 0 100 100" class="w-full h-full text-amber-100/80">
+        <!-- Bulan sabit melengkung indah -->
+        <path
+          fill="currentColor"
+          d="M30,50 C30,30.5 43,13.8 61,8 C42,10.5 28,26.5 28,46 C28,67 45.5,84 67,84 C79,84 89.5,78.5 96.5,70 C91.5,78.5 82,84 71,84 C48.4,84 30,65.6 30,43 Z"
+        />
+      </svg>
+    </div>
+
+    <!-- Ambient Romantic glow -->
+    <div
+      class="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[350px] md:w-[600px] h-[350px] md:h-[600px] bg-rose-900/10 rounded-full blur-[100px] pointer-events-none z-0 ambient-glow"
+    ></div>
+    <div
+      class="absolute bottom-1/4 left-1/3 w-[300px] h-[300px] bg-indigo-950/20 rounded-full blur-[120px] pointer-events-none z-0 ambient-glow"
+      style="animation-delay: -3s"
+    ></div>
+
+    <!-- Background Music Audio (Jamrud - Selamat Ulang Tahun Instrumental Piano Cover) -->
+    <audio id="bgMusic" loop>
+      <!-- Tautan ini memutar versi piano instrumental lembut lagu ulang tahun yang indah -->
+      <!-- TIPS: Jika Anda memiliki file MP3 lagu Jamrud sendiri, letakkan file tersebut di folder yang sama dan ganti link di bawah menjadi src="selamat-ulang-tahun-instrumental.mp3" -->
+      <source src="/musik/backsound.mp3" type="audio/mp3" />
+    </audio>
+
+    <!-- Music Toggle Button -->
+    <button
+      id="musicBtn"
+      class="fixed top-6 right-6 z-50 p-3 rounded-full glass-card hover:bg-white/10 active:scale-95 transition-all duration-300 group shadow-lg"
+      aria-label="Putar Musik"
+    >
+      <svg
+        id="musicOnIcon"
+        class="w-5 h-5 text-rose-300 hidden group-hover:scale-105 transition-transform"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="1.5"
+          d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"
+        ></path>
+      </svg>
+      <svg
+        id="musicOffIcon"
+        class="w-5 h-5 text-slate-400 group-hover:scale-105 transition-transform"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="1.5"
+          d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"
+          clip-rule="evenodd"
+        ></path>
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="1.5"
+          d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"
+        ></path>
+      </svg>
+    </button>
+
+    <!-- HEADER / INTRO SECTION -->
+    <header
+      class="w-full max-w-xl text-center mt-8 md:mt-12 z-10 select-none animate-fade-in"
+    >
+      <span
+        class="inline-block px-3 py-1 rounded-full text-xs font-medium tracking-widest text-rose-300/80 uppercase bg-rose-950/20 border border-rose-900/30 backdrop-blur-sm mb-4"
+      >
+        24 Juni 2026
+      </span>
+      <h1
+        class="font-title text-3xl md:text-5xl font-light tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-stone-100 via-rose-100 to-stone-300 mb-3"
+      >
+        Happy Birthday
+      </h1>
+      <p
+        class="font-serif-elegant italic text-sm md:text-base text-slate-400/90 px-4 max-w-md mx-auto leading-relaxed"
+      >
+        "Maybe this is small thing, but I hope it can make your birthday a
+        little more special."
+      </p>
+    </header>
+
+    <!-- INTERACTIVE ENVELOPE SECTION -->
+    <main
+      class="w-full flex flex-col items-center justify-center my-auto py-10 z-10"
+    >
+      <!-- Envelope Container -->
+      <div
+        id="envelopeContainer"
+        class="envelope-wrapper w-72 h-44 md:w-[360px] md:h-[220px] cursor-pointer group active:scale-98 transition-transform duration-300"
+      >
+        <div
+          id="envelope"
+          class="envelope w-full h-full rounded-b-lg border border-slate-800/50 shadow-[0_20px_50px_rgba(0,0,0,0.6)]"
+        >
+          <!-- Flap -->
+          <div class="flap"></div>
+          <!-- Paper Preview inside envelope -->
+          <div
+            class="letter-preview p-4 flex flex-col justify-between shadow-inner border border-stone-200"
+          >
+            <div class="space-y-1.5 opacity-40">
+              <div class="h-2 w-1/3 bg-stone-400 rounded"></div>
+              <div class="h-1.5 w-full bg-stone-300 rounded"></div>
+              <div class="h-1.5 w-5/6 bg-stone-300 rounded"></div>
+            </div>
+            <div class="flex justify-end opacity-40">
+              <span class="font-cursive text-sm text-stone-800"
+                >Aku tersadar...</span
+              >
+            </div>
+          </div>
+          <!-- Pocket -->
+          <div class="pocket flex items-center justify-center">
+            <!-- Sealed Logo -->
+            <div
+              class="absolute top-[35%] left-1/2 -translate-x-1/2 w-10 h-10 md:w-12 md:h-12 bg-rose-800/90 rounded-full flex items-center justify-center text-rose-200 shadow-md group-hover:bg-rose-700 transition-colors border border-rose-600/30 z-10"
+            >
+              <!-- Custom Wax Seal Heart Icon -->
+              <svg
+                class="w-5 h-5 md:w-6 md:h-6 animate-pulse"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fill-rule="evenodd"
+                  d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"
+                  clip-rule="evenodd"
+                ></path>
+              </svg>
+            </div>
+            <!-- Hover instruction text inside pocket -->
+            <span
+              class="absolute bottom-4 text-[10px] md:text-xs text-slate-400 tracking-wider uppercase font-medium animate-pulse"
+              >Klik Untuk Membuka</span
+            >
+          </div>
+        </div>
+      </div>
+
+      <p
+        id="instructionLabel"
+        class="text-xs md:text-sm text-slate-400/80 mt-6 tracking-wide text-center max-w-xs transition-opacity duration-500"
+      >
+        Buka amplopnya lalu baca yaaa..
+      </p>
+    </main>
+
+    <!-- FULL SCREEN INTERACTIVE LETTER MODAL (AESTHETIC PAPER) -->
+    <div
+      id="letterModal"
+      class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-40 hidden flex items-center justify-center p-4 transition-all duration-500 opacity-0"
+    >
+      <!-- Close Button Area (Click outside to close) -->
+      <div class="absolute inset-0" id="modalOverlay"></div>
+
+      <!-- The Paper Document -->
+      <div
+        class="paper-texture w-full max-w-lg max-h-[85vh] rounded-lg shadow-2xl relative z-10 flex flex-col overflow-hidden border border-stone-300 transform scale-95 transition-transform duration-500"
+        id="letterPaper"
+      >
+        <!-- Close icon on top right of the paper -->
+        <button
+          id="closeLetterBtn"
+          class="absolute top-4 right-4 text-stone-500 hover:text-stone-800 active:scale-95 p-1 rounded-full hover:bg-stone-200/50 transition-all z-20"
+          aria-label="Tutup"
+        >
+          <svg
+            class="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="1.5"
+              d="M6 18L18 6M6 6l12 12"
+            ></path>
+          </svg>
+        </button>
+
+        <!-- Scrollable Paper Content -->
+        <div class="overflow-y-auto p-8 md:p-12 custom-scroll flex-1">
+          <!-- Small Vintage flower decoration element at the top -->
+          <div class="flex justify-center mb-6 text-stone-400">
+            <svg
+              class="w-8 h-8 opacity-70"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1"
+                d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m0-11.314l.707.707m11.314 11.314l.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z"
+              ></path>
+            </svg>
+          </div>
+
+          <!-- Poem Text -->
+          <article class="text-stone-800 text-left select-text">
+            <!-- Stanza 1 -->
+            <div class="mb-8 space-y-2">
+              <p class="font-serif-elegant italic text-lg leading-relaxed">
+                Aku tersadar,
+              </p>
+              <p class="font-serif-elegant italic text-lg leading-relaxed">
+                Terkadang dengan adanya jarak, Sesuatu hal akan jauh lebih baik
+                –
+              </p>
+              <p class="font-serif-elegant italic text-lg leading-relaxed">
+                Meskipun untuk meyakininya amatlah sukar...
+              </p>
+            </div>
+
+            <!-- Stanza 2 -->
+            <div class="mb-8 space-y-2">
+              <p
+                class="font-serif-elegant italic text-lg leading-relaxed text-stone-500"
+              >
+                Lihat saja bintang,
+              </p>
+              <p class="font-serif-elegant italic text-lg leading-relaxed">
+                Dengan adanya jarak, membuatnya bisa terlihat indah benderang..
+              </p>
+              <p
+                class="font-serif-elegant italic text-lg leading-relaxed text-stone-500"
+              >
+                Lihat saja bulan,
+              </p>
+              <p class="font-serif-elegant italic text-lg leading-relaxed">
+                Dengan adanya jarak, membuatnya bisa memberikan terang dalam
+                gelapnya malam..
+              </p>
+            </div>
+
+            <!-- Stanza 3 -->
+            <div class="mb-8 space-y-2">
+              <p
+                class="font-serif-elegant italic text-lg leading-relaxed text-stone-600 font-semibold"
+              >
+                Namun,
+              </p>
+              <p class="font-serif-elegant italic text-lg leading-relaxed">
+                Ketika bumi dan bintang berdekatan,<br />Ia akan menguapkan
+                seluruh air di lautan...
+              </p>
+              <p class="font-serif-elegant italic text-lg leading-relaxed">
+                Ketika bumi mendekat dengan bulan,<br />Ia akan menenggelamkan
+                seluruh daratan...
+              </p>
+            </div>
+
+            <!-- Stanza 4 -->
+            <div class="mb-10 space-y-2">
+              <p class="font-serif-elegant italic text-lg leading-relaxed">
+                Begitupun untuk aku dan kamu,
+              </p>
+              <p class="font-serif-elegant italic text-lg leading-relaxed">
+                Saat mendekat tak pernah ada dialog yang terucap,
+              </p>
+              <p class="font-serif-elegant italic text-lg leading-relaxed">
+                Dengan adanya jarak, setidaknya membuat kata, kalimat yang tak
+                sempat terucap melangit dan menjadi sebuah harap.
+              </p>
+              <p class="font-serif-elegant italic text-lg leading-relaxed">
+                Dan itu...
+              </p>
+              <p class="font-serif-elegant italic text-lg leading-relaxed">
+                Menjadikan aku sadar Jarak bukanlah pemisah
+              </p>
+              <p class="font-serif-elegant italic text-lg leading-relaxed">
+                Tapi.. Menjadikan hal yang sukar terasa lebih indah...
+              </p>
+            </div>
+
+            <!-- Closing signature area -->
+            <div
+              class="border-t border-stone-300/60 pt-6 mt-6 max-w-xs mx-auto"
+            >
+              <p class="font-cursive text-3xl text-rose-800">
+                Happy Birthday...
+              </p>
+            </div>
+          </article>
+          <!-- Button Main Game & Dekorasi -->
+          <div
+            class="flex flex-col items-center mt-10 mb-4 opacity-90 transition-opacity duration-300"
+          >
+            <!-- Tambahkan kelas 'animate-bounce' di sini -->
+            <a
+              href="game.html"
+              class="animate-bounce group relative px-6 py-2.5 bg-stone-800 text-stone-100 rounded-full font-medium text-sm tracking-wide hover:bg-rose-900 active:scale-95 transition-all shadow-md flex items-center gap-2 overflow-hidden border border-stone-700/50"
+            >
+              <span
+                class="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out"
+              ></span>
+              <svg
+                class="w-4 h-4 relative z-10"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
+                ></path>
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                ></path>
+              </svg>
+              <span class="relative z-10">Putri terjebak dalam game, ayo selamatkan dia</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <footer
+      class="w-full text-center py-4 z-10 select-none animate-fade-in-delayed"
+    >
+      <p
+        class="text-[10px] md:text-xs text-slate-500/80 tracking-widest uppercase"
+      >
+        I hope best things will always be with you
+      </p>
+    </footer>
+
+    <!-- Sparkle Particles effect container -->
+    <div
+      id="particleContainer"
+      class="absolute inset-0 pointer-events-none z-30"
+    ></div>
+
+    <!-- JavaScript logic -->
+    <script>
+      // DOM Elements
+      const starsCanvas = document.getElementById("starsCanvas");
+      const bgMusic = document.getElementById("bgMusic");
+      const musicBtn = document.getElementById("musicBtn");
+      const musicOnIcon = document.getElementById("musicOnIcon");
+      const musicOffIcon = document.getElementById("musicOffIcon");
+
+      const envelopeContainer = document.getElementById("envelopeContainer");
+      const envelope = document.getElementById("envelope");
+      const letterModal = document.getElementById("letterModal");
+      const letterPaper = document.getElementById("letterPaper");
+      const closeLetterBtn = document.getElementById("closeLetterBtn");
+      const modalOverlay = document.getElementById("modalOverlay");
+      const instructionLabel = document.getElementById("instructionLabel");
+      const particleContainer = document.getElementById("particleContainer");
+
+      let isMusicPlaying = false;
+
+      // Ensure canvas behaves responsively and scales beautifully
+      function resizeCanvas() {
+        starsCanvas.width = window.innerWidth;
+        starsCanvas.height = window.innerHeight;
+      }
+      window.addEventListener("resize", resizeCanvas);
+      resizeCanvas();
+
+      // 1. Interactive Starry Sky & Shooting Stars logic (Canvas)
+      const ctx = starsCanvas.getContext("2d");
+      let stars = [];
+      let shootingStars = [];
+      const numStars = 110;
+
+      function createStars() {
+        stars = [];
+        for (let i = 0; i < numStars; i++) {
+          stars.push({
+            x: Math.random() * starsCanvas.width,
+            y: Math.random() * starsCanvas.height,
+            radius: Math.random() * 1.2 + 0.2,
+            alpha: Math.random(),
+            speed: Math.random() * 0.01 + 0.005,
+            twinkleDir: Math.random() > 0.5 ? 1 : -1,
+          });
+        }
+      }
+      createStars();
+
+      // Spawn a single beautiful shooting star
+      function createShootingStar() {
+        shootingStars.push({
+          x:
+            Math.random() * (starsCanvas.width * 0.8) + starsCanvas.width * 0.2,
+          y: Math.random() * (starsCanvas.height * 0.3),
+          len: Math.random() * 80 + 40,
+          speed: Math.random() * 5 + 4,
+          size: Math.random() * 1.2 + 0.8,
+          opacity: 1,
+          fadeSpeed: Math.random() * 0.015 + 0.008,
+        });
+      }
+
+      function drawStars() {
+        ctx.clearRect(0, 0, starsCanvas.width, starsCanvas.height);
+
+        // Draw background twinkling stars
+        stars.forEach((star) => {
+          ctx.beginPath();
+          ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(244, 219, 219, ${star.alpha})`;
+          ctx.fill();
+
+          // Twinkle logic
+          star.alpha += star.speed * star.twinkleDir;
+          if (star.alpha >= 0.95 || star.alpha <= 0.05) {
+            star.twinkleDir *= -1;
+          }
+        });
+
+        // Random shooting star trigger (1% chance per frame)
+        if (Math.random() < 0.008 && shootingStars.length < 2) {
+          createShootingStar();
+        }
+
+        // Update and draw shooting stars diagonal trails
+        shootingStars.forEach((star, index) => {
+          star.x -= star.speed;
+          star.y += star.speed * 0.4; // diagonal movement
+          star.opacity -= star.fadeSpeed;
+
+          // Remove when completely faded or off-screen
+          if (
+            star.opacity <= 0 ||
+            star.x < -100 ||
+            star.y > starsCanvas.height
+          ) {
+            shootingStars.splice(index, 1);
+            return;
+          }
+
+          // Smooth linear gradient trail
+          let gradient = ctx.createLinearGradient(
+            star.x,
+            star.y,
+            star.x + star.len,
+            star.y - star.len * 0.4,
+          );
+          gradient.addColorStop(0, `rgba(254, 243, 199, ${star.opacity})`);
+          gradient.addColorStop(1, "rgba(254, 243, 199, 0)");
+
+          ctx.beginPath();
+          ctx.strokeStyle = gradient;
+          ctx.lineWidth = star.size;
+          ctx.moveTo(star.x, star.y);
+          ctx.lineTo(star.x + star.len, star.y - star.len * 0.4);
+          ctx.stroke();
+        });
+
+        requestAnimationFrame(drawStars);
+      }
+      drawStars();
+
+      // 2. Play/Pause Ambient Music
+      function toggleMusic() {
+        if (isMusicPlaying) {
+          bgMusic.pause();
+          musicOnIcon.classList.add("hidden");
+          musicOffIcon.classList.remove("hidden");
+        } else {
+          bgMusic.play().catch(() => {
+            console.log(
+              "Autoplay dicegah browser. Musik diputar setelah interaksi pengguna.",
+            );
+          });
+          musicOnIcon.classList.remove("hidden");
+          musicOffIcon.classList.add("hidden");
+        }
+        isMusicPlaying = !isMusicPlaying;
+      }
+      musicBtn.addEventListener("click", toggleMusic);
+
+      // 3. Spawns beautiful romantic floating star particles
+      function spawnSparkle(x, y) {
+        const particle = document.createElement("div");
+        particle.className =
+          "absolute pointer-events-none rounded-full bg-rose-200/90 shadow-md transition-all duration-1000 ease-out";
+
+        const size = Math.random() * 6 + 4;
+        particle.style.width = `${size}px`;
+        particle.style.height = `${size}px`;
+        particle.style.left = `${x - size / 2}px`;
+        particle.style.top = `${y - size / 2}px`;
+
+        particleContainer.appendChild(particle);
+
+        // Animate flying outwards
+        setTimeout(() => {
+          const angle = Math.random() * Math.PI * 2;
+          const distance = Math.random() * 80 + 30;
+          const dx = Math.cos(angle) * distance;
+          const dy = Math.sin(angle) * distance;
+
+          particle.style.transform = `translate(${dx}px, ${dy}px) scale(0)`;
+          particle.style.opacity = "0";
+        }, 10);
+
+        // Remove particle after life ends
+        setTimeout(() => {
+          particle.remove();
+        }, 1050);
+      }
+
+      // Global touch/click tracker for spark effects
+      document.body.addEventListener("click", (e) => {
+        if (
+          e.target.closest("#envelopeContainer") ||
+          e.target.closest("#letterPaper") ||
+          e.target.closest("#musicBtn")
+        )
+          return;
+        for (let i = 0; i < 4; i++) {
+          spawnSparkle(e.clientX, e.clientY);
+        }
+      });
+
+      // 4. Envelope opening and letter modal display
+      function openEnvelope(e) {
+        // Putar musik otomatis jika belum diputar (sebagai bentuk respons interaksi pengguna)
+        if (!isMusicPlaying) {
+          toggleMusic();
+        }
+
+        // Create explosion of stars around envelope
+        const rect = envelopeContainer.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        for (let i = 0; i < 15; i++) {
+          setTimeout(() => {
+            spawnSparkle(
+              centerX + (Math.random() * 40 - 20),
+              centerY + (Math.random() * 40 - 20),
+            );
+          }, i * 30);
+        }
+
+        // Animate envelope opening
+        envelope.classList.add("open");
+        instructionLabel.style.opacity = "0";
+
+        // Open the letter paper modal after brief sweet delay
+        setTimeout(() => {
+          letterModal.classList.remove("hidden");
+          // Allow browser to render display state before applying transitions
+          setTimeout(() => {
+            letterModal.classList.remove("opacity-0");
+            letterPaper.classList.remove("scale-95");
+          }, 50);
+        }, 900);
+      }
+      envelopeContainer.addEventListener("click", openEnvelope);
+
+      // 5. Close letter modal and restore envelope view
+      function closeLetter() {
+        letterPaper.classList.add("scale-95");
+        letterModal.classList.add("opacity-0");
+
+        setTimeout(() => {
+          letterModal.classList.add("hidden");
+          envelope.classList.remove("open");
+          instructionLabel.style.opacity = "1";
+        }, 500);
+      }
+      closeLetterBtn.addEventListener("click", closeLetter);
+      modalOverlay.addEventListener("click", closeLetter);
+    </script>
+  </body>
+</html>
