@@ -2,7 +2,7 @@
 <html lang="id">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Birthday Putri</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -60,6 +60,20 @@
       }
       .moon-glow {
         animation: moonGlow 5s infinite ease-in-out;
+      }
+
+      /* Floating animation for music button */
+      @keyframes floatMusic {
+        0%,
+        100% {
+          transform: translateX(-50%) translateY(0);
+        }
+        50% {
+          transform: translateX(-50%) translateY(-10px);
+        }
+      }
+      .animate-float-music {
+        animation: floatMusic 3s ease-in-out infinite;
       }
 
       /* Paper Texture styling */
@@ -200,7 +214,7 @@
     <!-- Music Toggle Button -->
     <button
       id="musicBtn"
-      class="fixed top-6 right-6 z-50 p-3 rounded-full glass-card hover:bg-white/10 active:scale-95 transition-all duration-300 group shadow-lg"
+      class="fixed bottom-10 left-1/2 animate-float-music z-50 p-3.5 rounded-full glass-card hover:bg-white/10 active:scale-95 transition-all duration-300 group shadow-[0_0_20px_rgba(255,255,255,0.1)] border border-white/20"
       aria-label="Putar Musik"
     >
       <svg
